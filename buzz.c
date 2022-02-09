@@ -3,6 +3,8 @@
 #include "sys/rtimer.h"
 #include "board-peripherals.h"
 #include <stdint.h>
+#include "sys/etimer.h"
+#include "buzzer.h"
 
 /* Thresholds for picking up*/
 int ACC_X = 20;  // >
@@ -13,15 +15,23 @@ int GYRO_X = -300; // <
 int GYRO_Y = 800;  // >
 int GYRO_Z = 1000; // >
 
-PROCESS(process_rtimer, "RTimer");                         // declare a process
-AUTOSTART_PROCESSES(&process_rtimer);                      // start process on system boot
-static int counter_rtimer;                                 // our own counter
-static struct rtimer timer_rtimer;                         // create a rtimer
+PROCESS(process_rtimer, "RTimer");    // declare an r-timer for IMU - idle state
+PROCESS(process_etimer, "ETimer");    // declare a etimer for buzzer - active state
+AUTOSTART_PROCESSES(&process_rtimer); // start r-timer on system boot
+
+static int counter_rtimer;                                 // counter var for r-timer - IMU
+static struct rtimer timer_rtimer;                         // create a task
 static rtimer_clock_t timeout_rtimer = RTIMER_SECOND / 20; // 20 Hz
+static bool moved = false;                                 // movement flag
+static int moveCount = 0;                                  // counter for detecting significant movement
+
+static int counter_etimer;  // counter var for e-timer
+int buzzerFrequency = 3951; // hgh notes on a piano
 
 static void init_mpu_reading(void);
 static void get_mpu_reading(int arr[]);
 
+/*
 static void
 print_mpu_reading(int reading)
 {
@@ -33,14 +43,13 @@ print_mpu_reading(int reading)
 
     printf("%d.%02d", reading / 100, reading % 100);
 }
+*/
 
 void do_rtimer_timeout(struct rtimer *timer, void *ptr)
 {
     /* rtimer period 50ms = 20Hz*/
-    clock_time_t t;
     int sensor[6];
     // gx, gy, gz, ax, ay, az
-
     // read the IMU sensor every 0.05s i.e. 20Hz, 20 Samples per second
     rtimer_set(&timer_rtimer, RTIMER_NOW() + timeout_rtimer, 0, do_rtimer_timeout, NULL);
 
@@ -55,8 +64,14 @@ void do_rtimer_timeout(struct rtimer *timer, void *ptr)
     get_mpu_reading(sensor);
     if (sensor[0] < GYRO_X || sensor[1] > GYRO_Y || sensor[2] > GYRO_Z || sensor[3] > ACC_X || sensor[4] < ACC_Y || sensor[5] > ACC_Z)
     {
-        printf("DETECTED SIGNIFICANT MOVEMENT");
-        return;
+        moveCount += 1;
+        if (moveCount > 10)
+        {
+            moved = true;
+            moveCount = 0;
+            printf("Detected Motion. Stopped IMU\n");
+            return;
+        }
     }
 }
 
@@ -108,17 +123,51 @@ init_mpu_reading(void)
     mpu_9250_sensor.configure(SENSORS_ACTIVE, MPU_9250_SENSOR_TYPE_ALL);
 }
 
+// IMU
 PROCESS_THREAD(process_rtimer, ev, data)
 {
     PROCESS_BEGIN();
+
     init_mpu_reading();
+    // process_event_t movement_detected_event = process_alloc_event();
+    while (1)
+    {
+        if (!moved)
+        {
+            rtimer_set(&timer_rtimer, RTIMER_NOW() + timeout_rtimer, 0, do_rtimer_timeout, NULL);
+        }
+        else
+        {
+            moved = false;
+            // process_post(&process_etimer, movement_detected_event, NULL);
+            break;
+        }
+    }
+    printf("Out of loop\n");
+    process_start(&process_etimer, NULL);
+    printf("Started the other process\r\n");
+    PROCESS_EXIT();
+    printf("Exited the process\r\n");
+    PROCESS_END();
+}
+
+// Buzzer
+PROCESS_THREAD(process_etimer, ev, data)
+{
+    static struct etimer timer_etimer;
+    PROCESS_BEGIN();
+    process_exit(&process_rtimer);
+    buzzer_init();
 
     while (1)
     {
-        rtimer_set(&timer_rtimer, RTIMER_NOW() + timeout_rtimer, 0, do_rtimer_timeout, NULL);
-        // Here we call the function once and then it will continue to call itself again inside its implementation
-        // based on the delay specified
-        PROCESS_YIELD(); // yield the current process
+        // PROCESS_WAIT_EVENT_UNTIL(ev == movement_detected_event);
+        buzzer_start(buzzerFrequency);
+        etimer_set(&timer_etimer, 3 * CLOCK_SECOND);
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+        buzzer_stop();
+        etimer_set(&timer_etimer, 3 * CLOCK_SECOND);
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     }
 
     PROCESS_END();

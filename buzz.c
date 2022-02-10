@@ -116,7 +116,7 @@ static void init_mpu_reading(void) {
 // IMU
 PROCESS_THREAD(process_rtimer, ev, data) {
     PROCESS_BEGIN();
-    static struct etimer E;
+
     init_mpu_reading();
     if (process_is_running(&process_etimer)) {
         buzzer_stop();
@@ -126,9 +126,6 @@ PROCESS_THREAD(process_rtimer, ev, data) {
         process_exit(&process_light);
     }
 
-    printf("You have 1.5 seconds.Place the sensor tag on a steady table NOW!\n");
-    etimer_set(&E, 1.5 * CLOCK_SECOND);
-    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     printf("IDLE state... Ready for any movement!\n");
     // process_event_t movement_detected_event = process_alloc_event();
     while (1) {
@@ -155,6 +152,7 @@ PROCESS_THREAD(process_rtimer, ev, data) {
 // Buzzer
 PROCESS_THREAD(process_etimer, ev, data) {
     static struct etimer timer_etimer;
+
     PROCESS_BEGIN();
     if (process_is_running(&process_rtimer)) {
         process_exit(&process_rtimer);
@@ -185,6 +183,8 @@ PROCESS_THREAD(process_light, ev, data) {
     }
     init_opt_reading();
     static struct etimer et;
+    static struct etimer E;
+
     while (1) {
         if (lightChange) {
             lightChange = false;
@@ -193,7 +193,6 @@ PROCESS_THREAD(process_light, ev, data) {
             prevValue = 0;
             value = 0;
             process_exit(&process_etimer);
-            printf("Going to IDLE state\n");
             break;
         } else {
             etimer_set(&et, CLOCK_SECOND);
@@ -211,6 +210,9 @@ PROCESS_THREAD(process_light, ev, data) {
             count_exec += 1;
         }
     }
+    printf("You have 1.5 second.Place the sensor tag on a steady table NOW!\n");
+    etimer_set(&E, 1.5 * CLOCK_SECOND);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     process_start(&process_rtimer, NULL);
     PROCESS_YIELD();
     PROCESS_END();

@@ -24,7 +24,7 @@ ls /dev/tty* | grep usb
 
 **Usage Instructions**
 1) Place the sensor tag on a steady table.
-- Assuming you have already run the compile instructions, you will be greeted with "IDLE state... Ready for any movement!" on the terminal. 
+>>> Assuming you have already run the compile instructions, you will be greeted with "IDLE state... Ready for any movement!" on the terminal. 
 2) Pick it up or move erratically.
 - If a significant movement has been detected, "Going to ACTIVE state" will be displayed on the terminal. 
 - Buzzer will buzz in 3 sec intervals, unless a significant light change of > 300 lux is detected. 

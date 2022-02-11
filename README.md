@@ -35,8 +35,8 @@ ls /dev/tty* | grep usb
     - Buzzer will buzz in 3 sec intervals, unless a significant light change of > 300 lux is detected. 
 3) The diff will be printed on the terminal. This corresponds to the difference between light intensity readings detected. To achieve significant light change, aim for > 300 diff.
     - Upon significant light change detection, the "Light change detected" notification will be displayed on the terminal. 
-    - Thereafter you have 1.5 seconds to place the sensor tag on a steady table to ensure that there is not back to back active state transition caused by erratic movements, which would keep the buzzer buzzing. 
-4) Place the sensor tag on a steady table in the given 1.5sec window, upon light change detection.
+    - Thereafter you have 2.2 seconds to place the sensor tag on a steady table to ensure that there is not back to back active state transition caused by erratic movements, which would keep the buzzer buzzing. 
+4) Place the sensor tag on a steady table in the given 2.2sec window, upon light change detection.
     -  System will be back to IDLE state.
 5) You can terminate the system using Ctrl + C. 
 

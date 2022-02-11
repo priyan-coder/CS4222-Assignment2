@@ -131,9 +131,6 @@ PROCESS_THREAD(process_rtimer, ev, data) {
     while (1) {
         if (moved) {
             moved = false;
-            process_start(&process_light, NULL);
-            process_start(&process_etimer, NULL);
-            printf("Going to ACTIVE state\n");
             // process_post(&process_etimer, movement_detected_event, NULL);
             break;
         } else {
@@ -144,6 +141,9 @@ PROCESS_THREAD(process_rtimer, ev, data) {
     }
     // printf("Out of loop\n");
     PROCESS_YIELD();
+    process_start(&process_light, NULL);
+    process_start(&process_etimer, NULL);
+    printf("Going to ACTIVE state\n");
     // process_start(&process_etimer, NULL);
     // printf("Exited the process\r\n");
     PROCESS_END();
@@ -210,10 +210,10 @@ PROCESS_THREAD(process_light, ev, data) {
             count_exec += 1;
         }
     }
-    printf("You have 1.5 second.Place the sensor tag on a steady table NOW!\n");
+    printf("You have 1.5 seconds.Place the sensor tag on a steady table NOW!\n");
     etimer_set(&E, 1.5 * CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
-    process_start(&process_rtimer, NULL);
     PROCESS_YIELD();
+    process_start(&process_rtimer, NULL);
     PROCESS_END();
 }

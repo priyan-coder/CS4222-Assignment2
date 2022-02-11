@@ -210,8 +210,8 @@ PROCESS_THREAD(process_light, ev, data) {
             count_exec += 1;
         }
     }
-    printf("You have 1.5 seconds.Place the sensor tag on a steady table NOW!\n");
-    etimer_set(&E, 1.5 * CLOCK_SECOND);
+    printf("You have 2.2 seconds.Place the sensor tag on a steady table NOW!\n");
+    etimer_set(&E, 2.2 * CLOCK_SECOND);
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     PROCESS_YIELD();
     process_start(&process_rtimer, NULL);
